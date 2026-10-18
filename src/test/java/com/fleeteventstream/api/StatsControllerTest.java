@@ -118,8 +118,20 @@ class StatsControllerTest {
     }
 
     @Test
-    void pipelineReturnsCounters() throws Exception {
-        when(ingestionStats.snapshot()).thenReturn(new IngestionStats.Snapshot(100, 90, 10, 2, 2));
+    void latencyReturnsPercentiles() throws Exception {
+        when(vehicleEventRepository.latencyPercentiles(any()))
+                .thenReturn(new VehicleEventRepository.LatencyPercentiles(12.5, 40.0, 88.0));
+
+        mockMvc.perform(get("/api/stats/latency").param("windowSeconds", "300"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.windowSeconds").value(300))
+                .andExpect(jsonPath("$.latency.p50Ms").value(12.5))
+                .andExpect(jsonPath("$.latency.p95Ms").value(40.0))
+                .andExpect(jsonPath("$.latency.p99Ms").value(88.0));
+    }
+
+    @Test
+    void pipelineReturnsCounters() throws Exception {        when(ingestionStats.snapshot()).thenReturn(new IngestionStats.Snapshot(100, 90, 10, 2, 2));
         when(vehicleEventRepository.countAll()).thenReturn(90L);
         when(deadLetterRepository.countAll()).thenReturn(2L);
 

@@ -70,6 +70,17 @@ public class StatsController {
         return consumerLagService.lag();
     }
 
+    @GetMapping("/stats/latency")
+    public LatencyResponse latency(
+            @RequestParam(defaultValue = "300") @Min(1) @Max(86400) int windowSeconds,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            Instant since) {
+        Instant effectiveSince = since != null ? since : Instant.now().minusSeconds(windowSeconds);
+        return new LatencyResponse(windowSeconds, effectiveSince,
+                vehicleEventRepository.latencyPercentiles(effectiveSince));
+    }
+
     @GetMapping("/stats/dlq")
     public DlqStats dlq() {
         Instant oneHourAgo = Instant.now().minusSeconds(3600);
@@ -93,6 +104,10 @@ public class StatsController {
     public record ThroughputResponse(int windowSeconds, Instant from, Instant to, long totalEvents,
                                      double eventsPerSecond, long peakEventsPerSecond,
                                      List<VehicleEventRepository.ThroughputPoint> points) {
+    }
+
+    public record LatencyResponse(int windowSeconds, Instant since,
+                                  VehicleEventRepository.LatencyPercentiles latency) {
     }
 
     public record DlqStats(long total, long lastHour, Instant lastHourSince,

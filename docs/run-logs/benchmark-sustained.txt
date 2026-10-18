@@ -1,0 +1,74 @@
+==================================================================================
+FleetEventStream benchmark
+Started (UTC):      2026-10-18T08:27:49Z
+Target:             http://localhost:8080
+Simulator:          500 events/sec, 40 vehicles, 60s
+Drain timeout:      300s
+==================================================================================
+
+### Preflight
+GET /api/health/pipeline -> HTTP 200
+{
+  "healthy": true,
+  "status": "UP",
+  "kafkaReachable": true,
+  "databaseReachable": true,
+  "totalLag": 0,
+  "lagThreshold": 5000
+}
+Baseline:           rows=304894 persisted=249874 duplicates=0 dlq=6278
+Latency window since: 2026-10-18T08:27:50Z
+
+### Load phase
+{
+  "running": true,
+  "targetEventsPerSecond": 500,
+  "vehicleCount": 40,
+  "durationSeconds": 60
+}
+t= 10s  lag=3        persisted_delta=5089     dlq_delta=102
+t= 20s  lag=1        persisted_delta=10176    dlq_delta=216
+t= 30s  lag=64       persisted_delta=15337    dlq_delta=311
+t= 40s  lag=10       persisted_delta=20588    dlq_delta=418
+t= 50s  lag=5        persisted_delta=25726    dlq_delta=534
+t= 60s  lag=0        persisted_delta=29386    dlq_delta=614
+
+Simulator final status:
+{
+  "running": false,
+  "eventsAttempted": 30000,
+  "eventsPublished": 30000,
+  "eventsFailed": 0,
+  "malformedPublished": 614,
+  "elapsedSeconds": 60
+}
+At end of load: persisted_delta=29386 lag=0
+
+### Drain phase
+
+### Results
+Simulator target rate                500 events/sec
+Offered rate (attempted/duration)    500.0 events/sec
+Duration                             60s
+Events attempted                     30000
+Events confirmed published           30000
+Malformed payloads produced          614
+Events persisted by end of load      29386
+Events persisted after drain         29386
+Duplicates skipped (this run)        0
+Failed deliveries (this run)         614
+Dead letters added                   614
+Dead letters total                   6892
+Peak consumer lag                    177
+Drained consumer lag                 0 (drained in 0s)
+Persisted throughput during load     489.8 events/sec
+End-to-end persisted throughput      489.8 events/sec
+p50 end-to-end latency               10.795 ms
+p95 end-to-end latency               375.09459999999933 ms
+p99 end-to-end latency               501.74944000000005 ms
+
+Top DLQ failure reasons:
+  6890  Unexpected end-of-input within/between Object entries  at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE
+  2  Unexpected end-of-input within/between Object entries  at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE
+
+Finished (UTC): 2026-10-18T08:28:56Z

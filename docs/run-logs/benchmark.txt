@@ -1,0 +1,80 @@
+==================================================================================
+FleetEventStream benchmark
+Started (UTC):      2026-10-18T08:24:49Z
+Target:             http://localhost:8080
+Simulator:          2000 events/sec, 50 vehicles, 60s
+Drain timeout:      600s
+==================================================================================
+
+### Preflight
+GET /api/health/pipeline -> HTTP 200
+{
+  "healthy": true,
+  "status": "UP",
+  "kafkaReachable": true,
+  "databaseReachable": true,
+  "totalLag": 0,
+  "lagThreshold": 5000
+}
+Baseline:           rows=187305 persisted=132285 duplicates=0 dlq=3854
+Latency window since: 2026-10-18T08:24:49Z
+
+### Load phase
+{
+  "running": true,
+  "targetEventsPerSecond": 2000,
+  "vehicleCount": 50,
+  "durationSeconds": 60
+}
+t= 10s  lag=13309    persisted_delta=7581     dlq_delta=150
+t= 20s  lag=27165    persisted_delta=14716    dlq_delta=289
+t= 30s  lag=43496    persisted_delta=19556    dlq_delta=388
+t= 40s  lag=58290    persisted_delta=25919    dlq_delta=512
+t= 50s  lag=69108    persisted_delta=36015    dlq_delta=750
+t= 60s  lag=68651    persisted_delta=50365    dlq_delta=1024
+
+Simulator final status:
+{
+  "running": false,
+  "eventsAttempted": 120013,
+  "eventsPublished": 120013,
+  "eventsFailed": 0,
+  "malformedPublished": 2424,
+  "elapsedSeconds": 60
+}
+At end of load: persisted_delta=53448 lag=68651
+
+### Drain phase
+drain t=  0s lag=65417
+drain t= 20s lag=47705
+drain t= 40s lag=36121
+drain t= 60s lag=19782
+drain t= 80s lag=9394
+drain t=100s lag=3581
+
+### Results
+Simulator target rate                2000 events/sec
+Offered rate (attempted/duration)    2000.2 events/sec
+Duration                             60s
+Events attempted                     120013
+Events confirmed published           120013
+Malformed payloads produced          2424
+Events persisted by end of load      53448
+Events persisted after drain         117589
+Duplicates skipped (this run)        0
+Failed deliveries (this run)         2424
+Dead letters added                   2424
+Dead letters total                   6278
+Peak consumer lag                    73257
+Drained consumer lag                 0 (drained in 109s)
+Persisted throughput during load     890.8 events/sec
+End-to-end persisted throughput      695.8 events/sec
+p50 end-to-end latency               40713.869 ms
+p95 end-to-end latency               107744.6758 ms
+p99 end-to-end latency               114176.71792 ms
+
+Top DLQ failure reasons:
+  6277  Unexpected end-of-input within/between Object entries  at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE
+  1  Unexpected end-of-input within/between Object entries  at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE
+
+Finished (UTC): 2026-10-18T08:27:45Z

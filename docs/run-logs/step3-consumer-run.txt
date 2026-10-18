@@ -1,0 +1,168 @@
+==================================================================================
+FleetEventStream Step 3 hand verification
+Started (UTC): 2026-10-18T07:52:08Z
+Infrastructure: docker compose kafka (apache/kafka:3.9.0) + sqlserver (2022-latest)
+App: java -jar target/fleet-event-stream-0.0.1-SNAPSHOT.jar (profile default)
+Database: fleeteventstream (Flyway V1), empty at the start of this run
+==================================================================================
+
+### 1. Baseline pipeline counters
+{
+  "consumed": 0,
+  "persisted": 0,
+  "duplicatesSkipped": 0,
+  "failed": 0,
+  "dlqStored": 0,
+  "vehicleRows": 0,
+  "deadLetterRows": 0
+}
+
+### 2. Start simulator: 200 events/sec, 20 vehicles, 60 seconds (2% malformed)
+{
+  "running": true,
+  "targetEventsPerSecond": 200,
+  "vehicleCount": 20,
+  "malformedRate": 0.02,
+  "durationSeconds": 60,
+  "eventsAttempted": 0,
+  "eventsPublished": 0,
+  "eventsFailed": 0,
+  "malformedPublished": 0,
+  "actualEventsPerSecond": 0.0,
+  "startedAt": "2026-10-18T07:52:08.857851Z",
+  "endsAt": "2026-10-18T07:53:08.857851Z",
+  "elapsedSeconds": 0
+}
+
+### 3. Polling pipeline counters while the simulator runs
+t=10s  {"consumed":2005,"persisted":1967,"duplicatesSkipped":0,"failed":38,"dlqStored":38,"vehicleRows":1967,"deadLetterRows":38}
+t=20s  {"consumed":4014,"persisted":3936,"duplicatesSkipped":0,"failed":78,"dlqStored":78,"vehicleRows":3936,"deadLetterRows":78}
+t=30s  {"consumed":6024,"persisted":5907,"duplicatesSkipped":0,"failed":115,"dlqStored":115,"vehicleRows":5909,"deadLetterRows":115}
+t=40s  {"consumed":8032,"persisted":7876,"duplicatesSkipped":0,"failed":156,"dlqStored":156,"vehicleRows":7876,"deadLetterRows":156}
+t=50s  {"consumed":10042,"persisted":9836,"duplicatesSkipped":0,"failed":204,"dlqStored":204,"vehicleRows":9838,"deadLetterRows":204}
+t=60s  {"consumed":12000,"persisted":11760,"duplicatesSkipped":0,"failed":240,"dlqStored":240,"vehicleRows":11760,"deadLetterRows":240}
+
+### 4. Simulator status after 60s duration
+{
+  "running": false,
+  "targetEventsPerSecond": 200,
+  "vehicleCount": 20,
+  "malformedRate": 0.02,
+  "durationSeconds": 60,
+  "eventsAttempted": 12000,
+  "eventsPublished": 12000,
+  "eventsFailed": 0,
+  "malformedPublished": 240,
+  "actualEventsPerSecond": 200.0,
+  "startedAt": "2026-10-18T07:52:08.857851Z",
+  "endsAt": "2026-10-18T07:53:08.857851Z",
+  "elapsedSeconds": 63
+}
+
+### 5. Wait for consumer lag to drain
+{"consumed":12000,"persisted":11760,"duplicatesSkipped":0,"failed":240,"dlqStored":240,"vehicleRows":11760,"deadLetterRows":240}
+All attempted events accounted for (rows=12000, attempted=12000)
+
+### 6. SQL Server row counts (sqlcmd inside the SQL Server container)
+vehicle_event_rows
+------------------
+             11760
+dead_letter_event_rows
+----------------------
+                   240
+
+### 7. Recent dead-letter rows (source metadata must be populated)
+id                   source_topic                                                                                                                                                                                                                                                    partition_id source_offset        error_class                                                                                                                                                                                                                                                     failure_reason                                                                                                 retry_count failed_at                             
+-------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ------------ -------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------- ----------- --------------------------------------
+                 240 vehicle.telemetry                                                                                                                                                                                                                                                          0                  239 com.fasterxml.jackson.core.io.JsonEOFException                                                                                                                                                                                                                  Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE           0            2026-10-18 07:53:08.7707349
+                 239 vehicle.telemetry                                                                                                                                                                                                                                                          0                  238 com.fasterxml.jackson.core.io.JsonEOFException                                                                                                                                                                                                                  Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE           0            2026-10-18 07:53:08.3106243
+                 238 vehicle.telemetry                                                                                                                                                                                                                                                          0                  237 com.fasterxml.jackson.core.io.JsonEOFException                                                                                                                                                                                                                  Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE           0            2026-10-18 07:53:08.0730355
+                 237 vehicle.telemetry                                                                                                                                                                                                                                                          0                  236 com.fasterxml.jackson.core.io.JsonEOFException                                                                                                                                                                                                                  Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE           0            2026-10-18 07:53:07.8765573
+                 236 vehicle.telemetry                                                                                                                                                                                                                                                          0                  235 com.fasterxml.jackson.core.io.JsonEOFException                                                                                                                                                                                                                  Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE           0            2026-10-18 07:53:07.7321755
+
+### 8. Top DLQ failure reasons
+failure_reason                                                                                       n          
+---------------------------------------------------------------------------------------------------- -----------
+Unexpected end-of-input within/between Object entries
+ at [Source: REDACTED (`StreamReadFeature.INCL         240
+
+### 9. Replay idempotency check
+Before replay: vehicleRows=11760 duplicatesSkipped=0
+Replaying 200 records from vehicle.telemetry partition 0 offset 0 (all already consumed):
+{
+  "topic": "vehicle.telemetry",
+  "partition": 0,
+  "fromOffset": 0,
+  "recordsRead": 200,
+  "recordsRepublished": 200,
+  "skipped": 0,
+  "endOffset": 4200
+}
+Waiting for replayed records to be consumed...
+After replay:  vehicleRows=11760 duplicatesSkipped=196
+Delta:         vehicleRows=0 duplicatesSkipped=196
+
+### 10. Final SQL counts (must be unchanged by the replay)
+vehicle_event_rows_after_replay
+-------------------------------
+                          11760
+dead_letter_event_rows_after_replay
+-----------------------------------
+                                244
+
+### 11. Assertions
+PASS: replay added zero new vehicle_event rows
+PASS: replay increased duplicatesSkipped (0 -> 196)
+PASS: vehicle_event rows > 0 (11760)
+PASS: dead_letter_event rows > 0 (244)
+
+Finished (UTC): 2026-10-18T07:53:14Z
+
+### 12. DLQ replay by id (POST /api/admin/replay/dlq)
+Recent DLQ page:
+{
+  "page": 0,
+  "size": 2,
+  "total": 244,
+  "items": [
+    {
+      "id": 244,
+      "sourceTopic": "vehicle.telemetry",
+      "partitionId": 0,
+      "sourceOffset": 243,
+      "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException"
+    },
+    {
+      "id": 243,
+      "sourceTopic": "vehicle.telemetry",
+      "partitionId": 0,
+      "sourceOffset": 242,
+      "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException"
+    }
+  ]
+}
+Replaying ids=[244,243]
+{
+  "requested": 2,
+  "found": 2,
+  "republished": 2,
+  "skipped": 0,
+  "missing": 0
+}
+Counters after DLQ replay (malformed payloads correctly return to the DLQ):
+{
+  "consumed": 12202,
+  "persisted": 11760,
+  "duplicatesSkipped": 196,
+  "failed": 246,
+  "dlqStored": 246,
+  "vehicleRows": 11760,
+  "deadLetterRows": 246
+}
+
+Finished (UTC): 2026-10-18T07:53:23Z

@@ -191,7 +191,10 @@ public class TelemetrySimulator {
         long elapsed = start == null ? 0 : java.time.Duration.between(start, Instant.now()).getSeconds();
         long published = producer.getPublishedCount() - publishedBaseline;
         long failed = producer.getFailedCount() - failedBaseline;
-        double actualRate = elapsed > 0 ? attempted.get() / (double) elapsed : 0.0;
+        Instant rateEnd = (!isRunning && endsAt != null) ? endsAt : Instant.now();
+        long activeSeconds = start == null ? 0 : Math.max(1,
+                java.time.Duration.between(start, rateEnd).getSeconds());
+        double actualRate = attempted.get() / (double) activeSeconds;
         return new SimulatorStatus(
                 isRunning,
                 eventsPerSecond,

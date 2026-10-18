@@ -2,6 +2,7 @@ package com.fleeteventstream.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
 import com.fleeteventstream.model.VehicleEvent;
 import com.fleeteventstream.observability.IngestionStats;
 import com.fleeteventstream.persistence.VehicleEventRepository;
@@ -10,7 +11,6 @@ import jakarta.validation.Validator;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
@@ -37,12 +37,12 @@ public class VehicleEventConsumer {
                                 Validator validator,
                                 VehicleEventRepository repository,
                                 IngestionStats stats,
-                                @Value("${fleet.kafka.consumer.max-payload-chars:65536}") int maxPayloadChars) {
+                                FleetKafkaProperties properties) {
         this.objectMapper = objectMapper;
         this.validator = validator;
         this.repository = repository;
         this.stats = stats;
-        this.maxPayloadChars = maxPayloadChars;
+        this.maxPayloadChars = properties.consumer().maxPayloadChars();
     }
 
     @KafkaListener(
@@ -52,6 +52,7 @@ public class VehicleEventConsumer {
             concurrency = "${fleet.kafka.consumer.concurrency}")
     public void consume(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
         stats.recordConsumed();
+        long started = System.nanoTime();
         try {
             VehicleEvent event = parseAndValidate(record.value());
             boolean inserted = repository.insertIfAbsent(event, record.value());
@@ -73,6 +74,8 @@ public class VehicleEventConsumer {
             // Do NOT ack. The configured DefaultErrorHandler retries with exponential backoff
             // and, when exhausted, publishes the record to vehicle.telemetry.dlq.
             throw e;
+        } finally {
+            stats.recordProcessing(started);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.fleeteventstream.persistence;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -20,9 +21,19 @@ import java.util.List;
 public class DeadLetterRepository {
 
     private static final ZoneOffset UTC = ZoneOffset.UTC;
-    private static final String COLUMNS =
-            "id, source_topic, partition_id, source_offset, failure_reason, error_class, " +
-                    "raw_payload, failed_at, retry_count";
+    private static final String SELECT_RECENT = """
+            SELECT id, source_topic, partition_id, source_offset, failure_reason, error_class,
+                   raw_payload, failed_at, retry_count
+            FROM dead_letter_event
+            ORDER BY failed_at DESC, id DESC
+            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            """;
+    private static final String SELECT_BY_IDS_PREFIX = """
+            SELECT id, source_topic, partition_id, source_offset, failure_reason, error_class,
+                   raw_payload, failed_at, retry_count
+            FROM dead_letter_event
+            WHERE id IN (
+            """;
 
     private final JdbcTemplate jdbc;
 
@@ -33,44 +44,45 @@ public class DeadLetterRepository {
     public long insert(String sourceTopic, int partitionId, long sourceOffset,
                        String failureReason, String errorClass, String rawPayload, int retryCount) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbc.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement("""
-                            INSERT INTO dead_letter_event
-                                (source_topic, partition_id, source_offset, failure_reason,
-                                 error_class, raw_payload, retry_count)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                            """, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, sourceTopic);
-            ps.setInt(2, partitionId);
-            ps.setLong(3, sourceOffset);
-            ps.setString(4, truncate(failureReason, 1000));
-            ps.setString(5, truncate(errorClass, 250));
-            ps.setString(6, rawPayload);
-            ps.setInt(7, retryCount);
-            return ps;
-        }, keyHolder);
+        try {
+            jdbc.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement("""
+                                INSERT INTO dead_letter_event
+                                    (source_topic, partition_id, source_offset, failure_reason,
+                                     error_class, raw_payload, retry_count)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, sourceTopic);
+                ps.setInt(2, partitionId);
+                ps.setLong(3, sourceOffset);
+                ps.setString(4, truncate(failureReason, 1000));
+                ps.setString(5, truncate(errorClass, 250));
+                ps.setString(6, rawPayload);
+                ps.setInt(7, retryCount);
+                return ps;
+            }, keyHolder);
+        } catch (DuplicateKeyException duplicate) {
+            // The source record was redelivered after the DLQ write but before the source
+            // offset was committed. The audit row already exists.
+            return 0;
+        }
         Number key = keyHolder.getKey();
         return key == null ? 0 : key.longValue();
     }
 
     public List<DeadLetterEvent> findRecent(int page, int size) {
         int offset = page * size;
-        return jdbc.query("SELECT " + COLUMNS + """
-                         FROM dead_letter_event
-                         ORDER BY failed_at DESC, id DESC
-                         OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-                        """,
-                MAPPER, offset, size);
+        return jdbc.query(SELECT_RECENT, MAPPER, offset, size);
     }
 
     public List<DeadLetterEvent> findByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
+        // Only ? placeholders are generated from the list size; values stay bound parameters.
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
-        return jdbc.query("SELECT " + COLUMNS + " FROM dead_letter_event WHERE id IN ("
-                        + placeholders + ") ORDER BY id",
-                MAPPER, ids.toArray());
+        String sql = SELECT_BY_IDS_PREFIX + placeholders + ") ORDER BY id";
+        return jdbc.query(sql, MAPPER, ids.toArray());
     }
 
     public long countAll() {

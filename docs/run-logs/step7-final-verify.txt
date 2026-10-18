@@ -1,0 +1,24 @@
+FleetEventStream — final ./mvnw -B clean verify (Step 7)
+Run on 2026-10-18; Testcontainers started the real Kafka and SQL Server containers.
+Flyway applied V1 and V2 (unique dead-letter source index).
+
+[INFO] Running com.fleeteventstream.config.ConfigPropertiesValidationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.703 s -- in com.fleeteventstream.config.ConfigPropertiesValidationTest
+[INFO] Running com.fleeteventstream.simulator.TelemetrySimulatorTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.544 s -- in com.fleeteventstream.simulator.TelemetrySimulatorTest
+[INFO] Running com.fleeteventstream.kafka.TelemetryProducerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.174 s -- in com.fleeteventstream.kafka.TelemetryProducerTest
+[INFO] Running com.fleeteventstream.model.VehicleEventValidationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.064 s -- in com.fleeteventstream.model.VehicleEventValidationTest
+[INFO] Running com.fleeteventstream.api.StatsControllerTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.351 s -- in com.fleeteventstream.api.StatsControllerTest
+[INFO] Running com.fleeteventstream.api.AdminControllerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.357 s -- in com.fleeteventstream.api.AdminControllerTest
+[INFO] Running com.fleeteventstream.api.EventControllerTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.309 s -- in com.fleeteventstream.api.EventControllerTest
+[INFO] Tests run: 33, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.fleeteventstream.integration.PipelineIT
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 46.18 s -- in com.fleeteventstream.integration.PipelineIT
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  01:14 min

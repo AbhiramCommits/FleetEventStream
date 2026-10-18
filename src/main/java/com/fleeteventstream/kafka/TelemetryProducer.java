@@ -2,10 +2,10 @@ package com.fleeteventstream.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
 import com.fleeteventstream.model.VehicleEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
@@ -31,10 +31,10 @@ public class TelemetryProducer {
 
     public TelemetryProducer(KafkaTemplate<String, String> kafkaTemplate,
                              ObjectMapper objectMapper,
-                             @Value("${fleet.kafka.topics.telemetry}") String topic) {
+                             FleetKafkaProperties properties) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
-        this.topic = topic;
+        this.topic = properties.topics().telemetry();
     }
 
     public CompletableFuture<SendResult<String, String>> publish(VehicleEvent event) {

@@ -175,6 +175,13 @@ class PipelineIT extends IntegrationTestBase {
 
         // The records after the poison pills committed on the same partition.
         assertThat(vehicleEvents.countAll()).isEqualTo(rowsBefore + 100);
+
+        // DLQ persistence is idempotent on the original source coordinates.
+        DeadLetterEvent first = recent.get(0);
+        long duplicateId = deadLetters.insert(first.sourceTopic(), first.partitionId(),
+                first.sourceOffset(), "redelivery", "duplicate", "{}", 0);
+        assertThat(duplicateId).isZero();
+        assertThat(deadLetters.countAll()).isEqualTo(dlqBefore + 5);
     }
 
     @Test

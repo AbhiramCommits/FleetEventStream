@@ -1,0 +1,66 @@
+FleetEventStream Step 7 observability evidence
+Captured (UTC): 2026-10-18T08:41:35Z
+
+### GET /actuator/metrics/fleet.events.consumed
+{
+  "name": "fleet.events.consumed",
+  "description": "Telemetry records delivered to the consumer",
+  "measurements": [
+    {
+      "statistic": "COUNT",
+      "value": 33600.0
+    }
+  ],
+  "availableTags": [
+    {
+      "tag": "application",
+      "values": [
+        "fleet-event-stream"
+      ]
+    }
+  ]
+}
+
+### GET /actuator/metrics/fleet.events.processing
+{
+  "name": "fleet.events.processing",
+  "description": "Time spent parsing, validating, and persisting one telemetry record",
+  "baseUnit": "seconds",
+  "measurements": [
+    {
+      "statistic": "COUNT",
+      "value": 33600.0
+    },
+    {
+      "statistic": "TOTAL_TIME",
+      "value": 162.907946247
+    },
+    {
+      "statistic": "MAX",
+      "value": 0.135931833
+    }
+  ],
+  "availableTags": [
+    {
+      "tag": "application",
+      "values": [
+        "fleet-event-stream"
+      ]
+    }
+  ]
+}
+
+### GET /actuator/prometheus (fleet meters)
+fleet_dlq_duplicates_total{application="fleet-event-stream"} 0.0
+fleet_dlq_published_total{application="fleet-event-stream"} 654.0
+fleet_dlq_stored_total{application="fleet-event-stream"} 654.0
+fleet_events_consumed_total{application="fleet-event-stream"} 33600.0
+fleet_events_duplicates_total{application="fleet-event-stream"} 0.0
+fleet_events_failed_total{application="fleet-event-stream"} 654.0
+fleet_events_persisted_total{application="fleet-event-stream"} 32946.0
+fleet_events_processing_seconds{application="fleet-event-stream",quantile="0.5"} 0.0044544
+fleet_events_processing_seconds{application="fleet-event-stream",quantile="0.95"} 0.010483712
+fleet_events_processing_seconds{application="fleet-event-stream",quantile="0.99"} 0.022018048
+fleet_events_processing_seconds_count{application="fleet-event-stream"} 33600
+fleet_events_processing_seconds_sum{application="fleet-event-stream"} 162.907946247
+fleet_events_processing_seconds_max{application="fleet-event-stream"} 0.135931833

@@ -1,0 +1,98 @@
+==================================================================================
+FleetEventStream Step 7 graceful-restart proof
+Started (UTC): 2026-10-18T08:36:31Z
+Malformed rate: 0 for this test (all produced records must become vehicle rows)
+==================================================================================
+
+### 0. Stop the running app and reset Kafka topics + SQL tables
+Deletion of requested consumer groups ('fleet-event-consumers') was successful.
+Deletion of requested consumer groups ('fleet-event-consumers-dlq') was successful.
+Topics now:
+__consumer_offsets
+
+### 1. Build and start the app (Flyway V2 applied)
+App UP after 8s (pid=57432)
+{
+  "healthy": true,
+  "status": "UP",
+  "totalLag": 0
+}
+version                                            description                                                                                                                                                                                              success
+-------------------------------------------------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------
+1                                                  create schema                                                                                                                                                                                                  1
+2                                                  unique dead letter source                                                                                                                                                                                      1
+
+### 2. Start simulator at 300 events/sec for 300s
+{
+  "running": true,
+  "targetEventsPerSecond": 300,
+  "vehicleCount": 25,
+  "durationSeconds": 300
+}
+
+### 3. Status immediately before SIGTERM
+{
+  "running": true,
+  "eventsAttempted": 4518,
+  "eventsPublished": 4518,
+  "eventsFailed": 0,
+  "malformedPublished": 0
+}
+Pipeline before kill:
+{
+  "consumed": 4526,
+  "persisted": 4525,
+  "duplicatesSkipped": 0,
+  "failed": 0,
+  "dlqStored": 0,
+  "vehicleRows": 4528,
+  "deadLetterRows": 0
+}
+
+### 4. Graceful SIGTERM while the stream is live
+App exited gracefully after ~2s
+PASS: process exited
+Shutdown log evidence:
+2026-10-18T01:37:13.550-07:00  INFO 57432 --- [fleet-event-stream] [ionShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-10-18T01:37:13.829-07:00  INFO 57432 --- [fleet-event-stream] [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-10-18T01:37:13.852-07:00  INFO 57432 --- [fleet-event-stream] [ionShutdownHook] c.f.simulator.TelemetrySimulator         : Simulator executor stopped
+
+### 5. Broker end offsets after shutdown (authoritative produced count)
+vehicle.telemetry:0:1713
+vehicle.telemetry:1:1714
+vehicle.telemetry:2:1332
+Kafka total records = 4759
+
+### 6. Restart the app and let it drain the existing backlog
+App restarted after 8s (pid=57633)
+Lag drained to 0 after ~4s
+Pipeline after restart/drain:
+{
+  "consumed": 226,
+  "persisted": 226,
+  "duplicatesSkipped": 0,
+  "failed": 0,
+  "dlqStored": 0,
+  "vehicleRows": 4759,
+  "deadLetterRows": 0
+}
+
+### 7. SQL counts after restart
+vehicle_event_rows distinct_event_ids
+------------------ ------------------
+              4759               4759
+dead_letter_rows
+----------------
+               0
+
+### 8. Assertions
+Kafka total records:       4759
+vehicle_event rows:        4759
+duplicate event_id rows:   0
+duplicatesSkipped:         0
+dead_letter_event rows:    0 (expected 0: malformed rate was 0)
+PASS: every broker record was persisted after restart (no loss)
+PASS: no duplicate vehicle_event rows
+PASS: no unexpected dead letters
+
+Finished (UTC): 2026-10-18T08:37:24Z

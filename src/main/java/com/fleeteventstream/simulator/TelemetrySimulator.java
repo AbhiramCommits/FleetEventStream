@@ -1,11 +1,11 @@
 package com.fleeteventstream.simulator;
 
+import com.fleeteventstream.config.properties.SimulatorProperties;
 import com.fleeteventstream.kafka.TelemetryProducer;
 import com.fleeteventstream.model.VehicleEvent;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -34,6 +34,7 @@ public class TelemetrySimulator {
     private static final long TICK_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
 
     private final TelemetryProducer producer;
+    private final SimulatorProperties properties;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicLong attempted = new AtomicLong();
@@ -53,20 +54,17 @@ public class TelemetrySimulator {
     private volatile ScheduledExecutorService executor;
     private volatile List<VehicleState> vehicles = List.of();
 
-    public TelemetrySimulator(TelemetryProducer producer,
-                              @Value("${fleet.simulator.events-per-second:50}") int defaultEventsPerSecond,
-                              @Value("${fleet.simulator.vehicle-count:10}") int defaultVehicleCount,
-                              @Value("${fleet.simulator.malformed-rate:0.02}") double defaultMalformedRate,
-                              @Value("${fleet.simulator.duration-seconds:0}") int defaultDurationSeconds) {
+    public TelemetrySimulator(TelemetryProducer producer, SimulatorProperties properties) {
         this.producer = producer;
-        this.eventsPerSecond = defaultEventsPerSecond;
-        this.vehicleCount = defaultVehicleCount;
-        this.malformedRate = defaultMalformedRate;
-        this.durationSeconds = defaultDurationSeconds;
+        this.properties = properties;
+        this.eventsPerSecond = properties.eventsPerSecond();
+        this.vehicleCount = properties.vehicleCount();
+        this.malformedRate = properties.malformedRate();
+        this.durationSeconds = properties.durationSeconds();
     }
 
     public synchronized SimulatorStatus start(int eventsPerSecond, int vehicleCount, int durationSeconds) {
-        return start(eventsPerSecond, vehicleCount, durationSeconds, malformedRate);
+        return start(eventsPerSecond, vehicleCount, durationSeconds, properties.malformedRate());
     }
 
     public synchronized SimulatorStatus start(int eventsPerSecond, int vehicleCount,

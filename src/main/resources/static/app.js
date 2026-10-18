@@ -63,6 +63,12 @@ async function fetchHealth() {
   return { httpStatus: response.status, body };
 }
 
+async function fetchText(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.text();
+}
+
 function setBadge(element, text, className) {
   element.className = "badge " + className;
   const label = element.querySelector("#healthText") || element.querySelector("span:last-child");
@@ -239,8 +245,28 @@ function updateLag(lag) {
   }
 }
 
-function updateDlq(stats, pipeline) {
-  if (stats) {
+function measurement(metric, statistic) {
+  if (!metric || !Array.isArray(metric.measurements)) return null;
+  const found = metric.measurements.find((item) => item.statistic === statistic);
+  return found ? Number(found.value) : null;
+}
+
+function updateMicrometer(consumedMetric, processingMetric, prometheusText) {
+  const consumed = measurement(consumedMetric, "COUNT");
+  $("metricConsumed").textContent = consumed === null ? "—" : formatNumber(consumed);
+
+  const p95Match = prometheusText
+    ? prometheusText.match(/^fleet_events_processing_seconds\{[^}]*quantile="0\.95"[^}]*\}\s+([0-9.eE+-]+)/m)
+    : null;
+  const maxSeconds = measurement(processingMetric, "MAX");
+  const processingSeconds = p95Match ? Number(p95Match[1]) : maxSeconds;
+  $("metricP95Label").textContent = p95Match ? "processing p95" : "processing max";
+  $("metricP95").textContent = processingSeconds === null
+    ? "—"
+    : formatDecimal(processingSeconds * 1000, 1) + " ms";
+}
+
+function updateDlq(stats, pipeline) {  if (stats) {
     $("dlqTotal").textContent = formatNumber(stats.total);
     $("dlqLastHour").textContent = formatNumber(stats.lastHour);
     const reasons = $("topReasons");
@@ -358,10 +384,16 @@ async function poll() {
     simulator: "/api/simulator/status",
     pipeline: "/api/stats/pipeline",
     recentDlq: "/api/admin/dlq?page=0&size=8",
+    metricConsumed: "/actuator/metrics/fleet.events.consumed",
+    metricProcessing: "/actuator/metrics/fleet.events.processing",
+    prometheus: "/actuator/prometheus",
   };
   const entries = Object.entries(endpoints);
-  const results = await Promise.allSettled(entries.map(([key, url]) =>
-    key === "health" ? fetchHealth() : fetchJson(url)));
+  const results = await Promise.allSettled(entries.map(([key, url]) => {
+    if (key === "health") return fetchHealth();
+    if (key === "prometheus") return fetchText(url);
+    return fetchJson(url);
+  }));
 
   const errors = [];
   const values = {};
@@ -379,6 +411,7 @@ async function poll() {
     updateLag(values.lag);
     updateDlq(values.dlq, values.pipeline);
     updateDlqRows(values.recentDlq);
+    updateMicrometer(values.metricConsumed, values.metricProcessing, values.prometheus);
     updateHealth(values.health);
     updateSimulator(values.simulator);
     showErrors(errors);

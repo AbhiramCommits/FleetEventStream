@@ -1,5 +1,6 @@
 package com.fleeteventstream.observability;
 
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
@@ -8,7 +9,6 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,12 +29,10 @@ public class ConsumerLagService {
     private final String topic;
     private final String groupId;
 
-    public ConsumerLagService(AdminClient adminClient,
-                              @Value("${fleet.kafka.topics.telemetry}") String topic,
-                              @Value("${fleet.kafka.consumer.group-id}") String groupId) {
+    public ConsumerLagService(AdminClient adminClient, FleetKafkaProperties properties) {
         this.adminClient = adminClient;
-        this.topic = topic;
-        this.groupId = groupId;
+        this.topic = properties.topics().telemetry();
+        this.groupId = properties.consumer().groupId();
     }
 
     public LagReport lag() {

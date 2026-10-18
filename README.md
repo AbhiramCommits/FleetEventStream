@@ -48,7 +48,8 @@ The pipeline is deliberately asymmetric: the live path is optimized for validati
 | `src/main/resources/static` | `index.html`, `app.js`, `styles.css`: no build step, no CDN, no framework. |
 | `src/main/resources/db/migration` | Flyway `V1__create_schema.sql`; the schema is the idempotency contract. |
 | `src/test/java` | Unit/slice tests and `PipelineIT` Testcontainers integration suite. |
-| `scripts` | `dev-up.sh`, `dev-down.sh`, `benchmark.sh`. |
+| `scripts` | `dev-up.sh`, `dev-down.sh`, `benchmark.sh`, `lint.sh`; `Makefile` wraps the common targets. |
+| `SECURITY.md` | Credential handling, SQL parameterization, input limits, actuator exposure, and production gaps. |
 
 ### Database schema
 
@@ -68,7 +69,7 @@ The pipeline is deliberately asymmetric: the live path is optimized for validati
 
 Indexes: `ux_vehicle_event_event_id` (unique), `ix_vehicle_event_vehicle_time (vehicle_id, event_time DESC)`, `ix_vehicle_event_ingested_at`.
 
-`dead_letter_event` stores the failed record metadata: `id`, `source_topic`, `partition_id`, `source_offset`, `failure_reason`, `error_class`, `raw_payload NVARCHAR(MAX)`, `failed_at`, `retry_count`. Indexes on `failed_at DESC` and `failure_reason`.
+`dead_letter_event` stores the failed record metadata: `id`, `source_topic`, `partition_id`, `source_offset`, `failure_reason`, `error_class`, `raw_payload NVARCHAR(MAX)`, `failed_at`, `retry_count`. Indexes on `failed_at DESC` and `failure_reason`; Flyway V2 adds a unique index on `(source_topic, partition_id, source_offset)` so a DLQ redelivery after a crash cannot create a duplicate audit row.
 
 ## 3. How to run
 
@@ -87,6 +88,9 @@ Indexes: `ux_vehicle_event_event_id` (unique), `ix_vehicle_event_vehicle_time (v
 cp .env.example .env
 # Edit .env and set a strong MSSQL_SA_PASSWORD (and matching DB_PASSWORD usage below).
 ```
+
+See [`SECURITY.md`](SECURITY.md) for credential handling, SQL parameterization, input limits, and
+the production gaps (TLS/SASL, least-privilege DB login, authenticated admin endpoints).
 
 ### Option A — full stack in Docker Compose
 
@@ -144,7 +148,8 @@ All endpoints return JSON. Validation failures use HTTP 400, unknown events use 
 | POST | `/api/admin/replay` | Replay `{topic, partition, fromOffset, maxRecords}` onto the main topic. |
 | POST | `/api/admin/replay/dlq` | Replay stored dead letters by id: `{ids:[...]}`. |
 | GET | `/actuator/health` | Spring Boot liveness/readiness/DB health. |
-| GET | `/actuator/metrics` | Micrometer metrics (see the observability section). |
+| GET | `/actuator/metrics` | Micrometer counters and the processing timer. |
+| GET | `/actuator/prometheus` | Prometheus scrape endpoint, including the processing p50/p95/p99 quantiles. |
 
 #### Real sample responses
 
@@ -372,11 +377,44 @@ curl -s -X POST http://localhost:8080/api/admin/replay/dlq \
 
 DLQ replay is intentionally not magic: replaying an unfixed malformed payload will produce a new dead letter. Fix the parser/schema or the upstream producer first.
 
+### Make targets
+
+| Target | Action |
+|---|---|
+| `make up` | Build and start the full Compose stack. |
+| `make down` | Stop the stack (volumes are kept). |
+| `make run` | Run the app with Maven against local infra; loads `.env`. |
+| `make test` | Unit/MVC tests (no Docker). |
+| `make verify` | Unit + real Testcontainers integration tests. |
+| `make bench` | 2,000/s benchmark; writes `docs/run-logs/benchmark.txt`. |
+| `make lint` | Compile, JS syntax, live-secret scan, SQL-concatenation scan, Compose config. |
+
+### Observability
+
+`IngestionStats` maintains the raw counters used by the JSON API and mirrors them to Micrometer:
+
+| Meter | Type | Meaning |
+|---|---|---|
+| `fleet.events.consumed` | Counter | Records delivered to the listener. |
+| `fleet.events.persisted` | Counter | New rows inserted. |
+| `fleet.events.duplicates` | Counter | Duplicate `event_id` rows skipped. |
+| `fleet.events.failed` | Counter | Failed processing attempts. |
+| `fleet.events.processing` | Timer | Parse + validate + persist duration, with p50/p95/p99 quantiles. |
+| `fleet.dlq.stored` | Counter | Dead-letter rows written to SQL Server. |
+| `fleet.dlq.published` | Counter | Records published to the Kafka DLQ topic. |
+| `fleet.dlq.duplicates` | Counter | DLQ redeliveries suppressed by the unique source index. |
+
+Inspect them with `curl -s http://localhost:8080/actuator/metrics/fleet.events.consumed | jq .` and
+`curl -s http://localhost:8080/actuator/prometheus | grep '^fleet_'`. The dashboard surfaces the
+consumed count and processing p95 (the p95 is read from the Prometheus quantile because the
+actuator metrics JSON exposes count/total/max). Evidence:
+[`docs/run-logs/step7-observability.txt`](docs/run-logs/step7-observability.txt).
+
 ### Tests
 
 ```bash
-./mvnw test          # 30 unit/slice tests, no Docker required
-./mvnw -B verify     # 30 unit/slice + 6 Testcontainers integration tests
+./mvnw test          # 33 unit/slice tests, no Docker required
+./mvnw -B verify     # 33 unit/slice + 6 Testcontainers integration tests
 ```
 
 `verify` uses the Maven Failsafe plugin for `PipelineIT`, which starts `apache/kafka:3.9.0` and `mcr.microsoft.com/mssql/server:2022-latest` with Testcontainers and lets Flyway migrate the real SQL Server schema. The test JVM is given `-Dapi.version=1.43` by Failsafe because Docker Engine 29 rejects the docker-java default API version. If Docker is unavailable, `@Testcontainers(disabledWithoutDocker = true)` skips the integration class explicitly; this build had Docker available and ran the real containers. No embedded Kafka or H2 substitute was used.
@@ -408,35 +446,35 @@ Everything in this section comes from a file in [`docs/run-logs/`](docs/run-logs
 
 ### Test suite
 
-`./mvnw -B clean verify` — final run at 2026-10-18 08:17 UTC. Captured summary: [`docs/run-logs/step5-verify.txt`](docs/run-logs/step5-verify.txt).
+`./mvnw -B clean verify` — final run at 2026-10-18 08:43 UTC. Captured summary: [`docs/run-logs/step7-final-verify.txt`](docs/run-logs/step7-final-verify.txt).
 
 | Suite | Tests | Failures | Errors | Skipped | Time |
 |---|---:|---:|---:|---:|---:|
-| Unit + MVC slice (Surefire) | 30 | 0 | 0 | 0 | ~7 s (tests) |
-| Testcontainers integration (Failsafe, `PipelineIT`) | 6 | 0 | 0 | 0 | 54.96 s |
-| **Total** | **36** | **0** | **0** | **0** | **Maven total 1:25 min** |
+| Unit + MVC slice (Surefire) | 33 | 0 | 0 | 0 | ~6.5 s (tests) |
+| Testcontainers integration (Failsafe, `PipelineIT`) | 6 | 0 | 0 | 0 | 46.18 s |
+| **Total** | **39** | **0** | **0** | **0** | **Maven total 1:14 min** |
 
 Testcontainers images used: `apache/kafka:3.9.0` and `mcr.microsoft.com/mssql/server:2022-latest`. The integration suite publishes 1,000 events end-to-end, proves duplicate idempotency (100 duplicates), exercises five poison pills plus surrounding valid events, replays 555 records from offset 0 with zero new rows, pauses/resumes a listener to prove lag builds and drains, and verifies history ordering plus `/api/health/pipeline` over the real database.
 
 ### Sustained benchmark (500 events/sec offered)
 
-Run at 2026-10-18 08:27–08:28 UTC, `RATE=500 DURATION=60 VEHICLES=40`, source: [`docs/run-logs/benchmark-sustained.txt`](docs/run-logs/benchmark-sustained.txt).
+Run at 2026-10-18 08:40 UTC, `RATE=500 DURATION=60 VEHICLES=40`, source: [`docs/run-logs/benchmark-sustained.txt`](docs/run-logs/benchmark-sustained.txt).
 
 | Metric | Measured |
 |---|---:|
 | Offered / target rate | 500.0 events/sec |
 | Events attempted / confirmed published | 30,000 / 30,000 |
-| Malformed payloads produced | 614 |
-| Events persisted | 29,386 |
-| Persisted throughput during load | 489.8 events/sec |
-| End-to-end persisted throughput | 489.8 events/sec |
+| Malformed payloads produced | 593 |
+| Events persisted | 29,407 |
+| Persisted throughput during load | 490.1 events/sec |
+| End-to-end persisted throughput | 490.1 events/sec |
 | Duplicates skipped | 0 |
-| Dead letters added / total | 614 / 6,892 |
-| Peak consumer lag | 177 |
+| Dead letters added / total | 593 / 593 |
+| Peak consumer lag | 497 |
 | Drained consumer lag | 0 (0 s) |
-| p50 end-to-end latency | 10.795 ms |
-| p95 end-to-end latency | 375.095 ms |
-| p99 end-to-end latency | 501.749 ms |
+| p50 end-to-end latency | 44.997 ms |
+| p95 end-to-end latency | 1,768.945 ms |
+| p99 end-to-end latency | 1,861.575 ms |
 
 ### Overload / backpressure benchmark (2,000 events/sec offered)
 
@@ -475,15 +513,36 @@ From [`docs/run-logs/step3-consumer-run.txt`](docs/run-logs/step3-consumer-run.t
 
 The replay republished 200 records (4 of them were malformed and correctly re-entered the DLQ), added zero vehicle rows, and increased the duplicate counter. The raw assertions are in the log.
 
+### Graceful restart proof
+
+From [`docs/run-logs/step7-restart-test.txt`](docs/run-logs/step7-restart-test.txt), with malformed injection disabled so every produced record should become a vehicle row:
+
+| Metric | Measured |
+|---|---:|
+| Kafka end offsets after SIGTERM | 4,759 |
+| `vehicle_event` rows after restart/drain | 4,759 |
+| Distinct `event_id` values | 4,759 |
+| Duplicate `event_id` rows | 0 |
+| `dead_letter_event` rows | 0 |
+| Graceful process exit | ~2 s |
+| Restart-to-zero-lag | ~4 s |
+| `duplicatesSkipped` after restart | 0 |
+
+The app received SIGTERM while the simulator was running. Spring logged `Commencing graceful shutdown`,
+the simulator stopped its executor, and the process exited. After restart the consumer resumed from
+the last committed offsets and drained the remaining broker records; the counts prove no record was
+lost and no vehicle row was duplicated. The DLQ source index also makes a crash between DLQ publish
+and source-offset commit safe to retry.
+
 ### Dead-letter distribution
 
 | Run | DLQ added | DLQ total | Dominant reason |
 |---|---:|---:|---|
-| 500/s sustained | 614 | 6,892 | Truncated JSON (`JsonEOFException`), 6,890 rows |
+| 500/s sustained | 593 | 593 | Truncated JSON (`JsonEOFException`), 592 rows |
 | 2,000/s overload | 2,424 | 6,278 | Truncated JSON (`JsonEOFException`), 6,277 rows |
 | Step 3 hand run | 240 | 244 | Truncated JSON, 240 rows |
 
-The simulator injects truncated JSON so the DLQ path is exercised on every run; the variation in reasons is the JSON parser's line/column detail.
+The simulator injects truncated JSON so the DLQ path is exercised on every run; the variation in reasons is the JSON parser's line/column detail. The restart test reset the tables, so the 500/s total is relative to that clean state; the 2,000/s run was executed before that reset.
 
 ### Environment
 
@@ -512,11 +571,16 @@ The SQL Server image is amd64-only; throughput numbers include Rosetta/QEMU emul
 
 **Idempotent writes make it effectively once.** Every event carries a producer-generated UUID `eventId`, and `vehicle_event` has a unique index on `event_id`. The repository performs a single `INSERT` and treats `DuplicateKeyException` as "already applied", incrementing `duplicatesSkipped`. A redelivery or replay therefore cannot create a second row. The hand-run replay and the Testcontainers replay test both assert that replaying consumed offsets adds zero rows while increasing the duplicate counter. The database, not a process-local cache, is the arbiter, so the guarantee survives restarts and multiple consumer instances.
 
-**Why manual acks prevent silent loss.** With auto-commit, offsets are committed on a timer and a crash can commit past records that were never persisted. Here the offset moves only after the idempotent write. Failures throw out of the listener instead of being swallowed; the configured `DefaultErrorHandler` retries persistence failures with a 500 ms initial exponential backoff (×2.0) and publishes exhausted records to `vehicle.telemetry.dlq`. Validation and parse failures are classified non-retryable and go straight to the DLQ, because retrying malformed bytes cannot succeed. The DLQ consumer records the original topic/partition/offset, root error class, failure reason, retry count, and raw payload, so no failed record disappears.
+**Why manual acks prevent silent loss.** With auto-commit, offsets are committed on a timer and a crash can commit past records that were never persisted. Here the offset moves only after the idempotent write. Failures throw out of the listener instead of being swallowed; the configured `DefaultErrorHandler` retries persistence failures with a 500 ms initial exponential backoff (×2.0) and publishes exhausted records to `vehicle.telemetry.dlq`. Validation and parse failures are classified non-retryable and go straight to the DLQ, because retrying malformed bytes cannot succeed. The DLQ consumer records the original topic/partition/offset, root error class, failure reason, retry count, and raw payload, so no failed record disappears. The unique index on `(source_topic, partition_id, source_offset)` makes that audit write idempotent too, so a crash between DLQ publish and source-offset commit cannot create a duplicate dead letter.
 
 **Ordering by vehicle.** The producer keys every record by `vehicleId`. Kafka routes all records with the same key to the same partition, and the consumer processes a partition in offset order. That preserves per-vehicle ordering even with three partitions and three consumer threads. The trade-off is that ordering is per vehicle, not global. Replaying a historical range re-publishes in the original per-partition order, but mixing a replay with live traffic can interleave old and new events; use replay for recovery, not as a second live stream.
 
 **Backpressure is visible, not hidden.** Consumer lag is computed from broker committed offsets versus end offsets and exposed per partition. In the 2,000/s run the pipeline accumulated 73,257 records of lag before the producer stopped, then drained to zero in 109 seconds. The composite health endpoint returns 503 when Kafka or SQL Server is unreachable or when lag exceeds the configured threshold.
+
+**Graceful shutdown.** The web server, Kafka listener containers, and simulator all stop in an
+ordered shutdown. Listener containers get 25 seconds to finish in-flight records and acknowledge;
+the context lifecycle timeout is 30 seconds. The restart test above demonstrates the behavior with
+real counts.
 
 ## Evidence
 
@@ -524,6 +588,11 @@ The SQL Server image is amd64-only; throughput numbers include Rosetta/QEMU emul
 - [`docs/run-logs/benchmark.txt`](docs/run-logs/benchmark.txt) — 2,000/s overload run.
 - [`docs/run-logs/step3-consumer-run.txt`](docs/run-logs/step3-consumer-run.txt) — raw SQL counts, DLQ rows, replay deltas.
 - [`docs/run-logs/step4-api-samples.json`](docs/run-logs/step4-api-samples.json) — real responses for every endpoint and error case.
-- [`docs/run-logs/step5-verify.txt`](docs/run-logs/step5-verify.txt) — Maven verify summary (30 unit + 6 integration, 1:25).
+- [`docs/run-logs/step5-verify.txt`](docs/run-logs/step5-verify.txt) — earlier Maven verify summary (30 unit + 6 integration, 1:25).
+- [`docs/run-logs/step7-final-verify.txt`](docs/run-logs/step7-final-verify.txt) — final Maven verify summary (33 unit + 6 integration, 1:14).
+- [`docs/run-logs/step7-restart-test.txt`](docs/run-logs/step7-restart-test.txt) — graceful restart counts.
+- [`docs/run-logs/step7-observability.txt`](docs/run-logs/step7-observability.txt) — actuator and Prometheus samples.
+- [`docs/run-logs/step7-lint.txt`](docs/run-logs/step7-lint.txt) — secret, SQL-concatenation, JS, and Compose checks.
 - [`docs/dashboard.png`](docs/dashboard.png) — live dashboard while the simulator was running.
 - [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — consumer failure triage and safe replay procedure.
+- [`SECURITY.md`](SECURITY.md) — security controls and production gaps.

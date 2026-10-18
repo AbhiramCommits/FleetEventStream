@@ -1,9 +1,9 @@
 package com.fleeteventstream.observability;
 
+import com.fleeteventstream.config.properties.FleetHealthProperties;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -29,11 +29,11 @@ public class PipelineHealthService {
     public PipelineHealthService(JdbcTemplate jdbcTemplate,
                                  ConsumerLagService lagService,
                                  AdminClient adminClient,
-                                 @Value("${fleet.health.max-lag:5000}") long lagThreshold) {
+                                 FleetHealthProperties properties) {
         this.jdbcTemplate = jdbcTemplate;
         this.lagService = lagService;
         this.adminClient = adminClient;
-        this.lagThreshold = lagThreshold;
+        this.lagThreshold = properties.maxLag();
     }
 
     public PipelineHealth check() {

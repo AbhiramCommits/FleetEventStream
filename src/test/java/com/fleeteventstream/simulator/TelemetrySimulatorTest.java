@@ -1,6 +1,7 @@
 package com.fleeteventstream.simulator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fleeteventstream.config.properties.SimulatorProperties;
 import com.fleeteventstream.kafka.TelemetryProducer;
 import com.fleeteventstream.model.VehicleEvent;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ class TelemetrySimulatorTest {
         when(producer.getPublishedCount()).thenReturn(0L);
         when(producer.getFailedCount()).thenReturn(0L);
 
-        TelemetrySimulator simulator = new TelemetrySimulator(producer, 100, 5, 0.0, 0);
+        TelemetrySimulator simulator = new TelemetrySimulator(producer, new SimulatorProperties(100, 5, 0.0, 0));
         simulator.start(100, 5, 1, 0.0); // 100 events/sec for 1 second
         Thread.sleep(1_150);
 
@@ -72,7 +73,7 @@ class TelemetrySimulatorTest {
         when(producer.getPublishedCount()).thenReturn(0L);
         when(producer.getFailedCount()).thenReturn(0L);
 
-        TelemetrySimulator simulator = new TelemetrySimulator(producer, 100, 4, 1.0, 0);
+        TelemetrySimulator simulator = new TelemetrySimulator(producer, new SimulatorProperties(100, 4, 1.0, 0));
         simulator.start(100, 4, 1, 1.0);
         Thread.sleep(1_150);
 
@@ -98,7 +99,7 @@ class TelemetrySimulatorTest {
 
     @Test
     void startValidatesInputs() {
-        TelemetrySimulator simulator = new TelemetrySimulator(producer, 10, 2, 0.0, 0);
+        TelemetrySimulator simulator = new TelemetrySimulator(producer, new SimulatorProperties(10, 2, 0.0, 0));
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> simulator.start(0, 2, 1, 0.0))
                 .isInstanceOf(IllegalArgumentException.class);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> simulator.start(10, 0, 1, 0.0))

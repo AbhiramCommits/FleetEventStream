@@ -1,7 +1,7 @@
 package com.fleeteventstream.config;
 
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -9,21 +9,27 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
 
-    @Bean
-    public NewTopic vehicleTelemetryTopic(
-            @Value("${fleet.kafka.topics.telemetry}") String topic) {
-        return TopicBuilder.name(topic).partitions(3).replicas(1).build();
+    private final FleetKafkaProperties properties;
+
+    public KafkaTopicConfig(FleetKafkaProperties properties) {
+        this.properties = properties;
     }
 
     @Bean
-    public NewTopic vehicleTelemetryRetryTopic(
-            @Value("${fleet.kafka.topics.retry}") String topic) {
-        return TopicBuilder.name(topic).partitions(1).replicas(1).build();
+    public NewTopic vehicleTelemetryTopic() {
+        return TopicBuilder.name(properties.topics().telemetry())
+                .partitions(3).replicas(1).build();
     }
 
     @Bean
-    public NewTopic vehicleTelemetryDlqTopic(
-            @Value("${fleet.kafka.topics.dlq}") String topic) {
-        return TopicBuilder.name(topic).partitions(1).replicas(1).build();
+    public NewTopic vehicleTelemetryRetryTopic() {
+        return TopicBuilder.name(properties.topics().retry())
+                .partitions(1).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic vehicleTelemetryDlqTopic() {
+        return TopicBuilder.name(properties.topics().dlq())
+                .partitions(1).replicas(1).build();
     }
 }

@@ -1,0 +1,11 @@
+==> Java compile
+==> JavaScript syntax
+==> Secret scan (committed workspace, excluding .env/target/.git)
+the live MSSQL_SA_PASSWORD value is not present in tracked files
+no literal MSSQL password assignment found
+==> SQL parameterization scan
+no direct jdbc concatenation found
+NOTE: dynamic WHERE clauses in VehicleEventRepository use fixed fragments plus ? args.
+==> Compose config
+docker compose config valid
+lint passed

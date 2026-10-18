@@ -2,6 +2,7 @@ package com.fleeteventstream.kafka;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
 import com.fleeteventstream.model.VehicleEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,12 +24,20 @@ class TelemetryProducerTest {
     private final KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
+    private static FleetKafkaProperties kafkaProperties() {
+        return new FleetKafkaProperties(
+                new FleetKafkaProperties.Topics("vehicle.telemetry", "vehicle.telemetry.retry",
+                        "vehicle.telemetry.dlq"),
+                new FleetKafkaProperties.Consumer("fleet-event-consumers", "fleet-event-replay", 3, 65536),
+                new FleetKafkaProperties.Retry(3, 500, 2.0));
+    }
+
     @Test
     void serializesEventToExpectedJsonAndKeysByVehicleId() throws Exception {
         when(kafkaTemplate.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
-        TelemetryProducer producer = new TelemetryProducer(kafkaTemplate, objectMapper, "vehicle.telemetry");
+        TelemetryProducer producer = new TelemetryProducer(kafkaTemplate, objectMapper, kafkaProperties());
         VehicleEvent event = new VehicleEvent(
                 "11111111-1111-1111-1111-111111111111",
                 "veh-0007",
@@ -62,7 +71,7 @@ class TelemetryProducerTest {
         CompletableFuture<org.springframework.kafka.support.SendResult<String, String>> future = new CompletableFuture<>();
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(future);
 
-        TelemetryProducer producer = new TelemetryProducer(kafkaTemplate, objectMapper, "vehicle.telemetry");
+        TelemetryProducer producer = new TelemetryProducer(kafkaTemplate, objectMapper, kafkaProperties());
         producer.publishRaw("veh-0001", "{}");
         future.completeExceptionally(new RuntimeException("broker down"));
 

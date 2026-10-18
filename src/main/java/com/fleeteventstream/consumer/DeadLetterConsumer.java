@@ -60,10 +60,16 @@ public class DeadLetterConsumer {
         try {
             long id = repository.insert(sourceTopic, sourcePartition, sourceOffset,
                     failureReason, errorClass, record.value(), retryCount);
-            stats.recordDlqStored();
+            if (id == 0) {
+                stats.recordDlqDuplicate();
+                log.debug("Duplicate dead letter skipped for {}-{}@{}",
+                        sourceTopic, sourcePartition, sourceOffset);
+            } else {
+                stats.recordDlqStored();
+                log.warn("Stored dead letter id={} source={}-{}@{} class={} reason={}",
+                        id, sourceTopic, sourcePartition, sourceOffset, errorClass, failureReason);
+            }
             acknowledgment.acknowledge();
-            log.warn("Stored dead letter id={} source={}-{}@{} class={} reason={}",
-                    id, sourceTopic, sourcePartition, sourceOffset, errorClass, failureReason);
         } catch (RuntimeException e) {
             log.error("Could not persist dead letter for {}-{}@{}",
                     sourceTopic, sourcePartition, sourceOffset, e);

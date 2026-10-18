@@ -131,7 +131,8 @@ class StatsControllerTest {
     }
 
     @Test
-    void pipelineReturnsCounters() throws Exception {        when(ingestionStats.snapshot()).thenReturn(new IngestionStats.Snapshot(100, 90, 10, 2, 2));
+    void pipelineReturnsCounters() throws Exception {
+        when(ingestionStats.snapshot()).thenReturn(new IngestionStats.Snapshot(100, 90, 10, 2, 2));
         when(vehicleEventRepository.countAll()).thenReturn(90L);
         when(deadLetterRepository.countAll()).thenReturn(2L);
 

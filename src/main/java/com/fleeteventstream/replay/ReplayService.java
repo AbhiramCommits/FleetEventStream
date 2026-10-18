@@ -2,6 +2,8 @@ package com.fleeteventstream.replay;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fleeteventstream.config.properties.FleetKafkaProperties;
+import com.fleeteventstream.config.properties.ReplayProperties;
 import com.fleeteventstream.persistence.DeadLetterEvent;
 import com.fleeteventstream.persistence.DeadLetterRepository;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -50,19 +52,17 @@ public class ReplayService {
                          ObjectMapper objectMapper,
                          DeadLetterRepository deadLetterRepository,
                          @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers,
-                         @Value("${fleet.kafka.consumer.replay-group-id:fleet-event-replay}") String replayGroupId,
-                         @Value("${fleet.kafka.topics.telemetry}") String mainTopic,
-                         @Value("${fleet.kafka.topics.retry}") String retryTopic,
-                         @Value("${fleet.kafka.topics.dlq}") String dlqTopic,
-                         @Value("${fleet.replay.max-records:100000}") int configuredMaxRecords) {
+                         FleetKafkaProperties kafkaProperties,
+                         ReplayProperties replayProperties) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
         this.deadLetterRepository = deadLetterRepository;
         this.bootstrapServers = bootstrapServers;
-        this.replayGroupId = replayGroupId;
-        this.mainTopic = mainTopic;
-        this.replayableTopics = Set.of(mainTopic, retryTopic, dlqTopic);
-        this.configuredMaxRecords = configuredMaxRecords;
+        this.replayGroupId = kafkaProperties.consumer().replayGroupId();
+        this.mainTopic = kafkaProperties.topics().telemetry();
+        this.replayableTopics = Set.of(kafkaProperties.topics().telemetry(),
+                kafkaProperties.topics().retry(), kafkaProperties.topics().dlq());
+        this.configuredMaxRecords = replayProperties.maxRecords();
     }
 
     public ReplaySummary replay(String topic, int partition, long fromOffset, int maxRecords) {

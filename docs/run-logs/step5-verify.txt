@@ -1,0 +1,24 @@
+FleetEventStream — ./mvnw -B clean verify (Step 5, real Docker available)
+Command run from the repository root on 2026-10-18; captured Maven summary follows.
+The full Maven output also showed Testcontainers starting apache/kafka:3.9.0 and
+mcr.microsoft.com/mssql/server:2022-latest, Flyway applying V1 to fleeteventstream_test,
+and six PipelineIT methods passing.
+
+[INFO] Running com.fleeteventstream.simulator.TelemetrySimulatorTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.858 s -- in com.fleeteventstream.simulator.TelemetrySimulatorTest
+[INFO] Running com.fleeteventstream.kafka.TelemetryProducerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.264 s -- in com.fleeteventstream.kafka.TelemetryProducerTest
+[INFO] Running com.fleeteventstream.model.VehicleEventValidationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.357 s -- in com.fleeteventstream.model.VehicleEventValidationTest
+[INFO] Running com.fleeteventstream.api.StatsControllerTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.826 s -- in com.fleeteventstream.api.StatsControllerTest
+[INFO] Running com.fleeteventstream.api.AdminControllerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.431 s -- in com.fleeteventstream.api.AdminControllerTest
+[INFO] Running com.fleeteventstream.api.EventControllerTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.326 s -- in com.fleeteventstream.api.EventControllerTest
+[INFO] Tests run: 30, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.fleeteventstream.integration.PipelineIT
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 54.96 s -- in com.fleeteventstream.integration.PipelineIT
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  01:25 min

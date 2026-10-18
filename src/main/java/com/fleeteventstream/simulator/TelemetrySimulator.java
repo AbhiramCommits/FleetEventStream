@@ -44,6 +44,7 @@ public class TelemetrySimulator {
     private volatile double malformedRate;
     private volatile int durationSeconds;
     private volatile Instant startedAt;
+    private volatile Instant stoppedAt;
     private volatile Instant endsAt;
     private volatile long startNanos;
     private volatile long publishedBaseline;
@@ -93,6 +94,7 @@ public class TelemetrySimulator {
         this.publishedBaseline = producer.getPublishedCount();
         this.failedBaseline = producer.getFailedCount();
         this.startedAt = Instant.now();
+        this.stoppedAt = null;
         this.endsAt = durationSeconds > 0 ? startedAt.plusSeconds(durationSeconds) : null;
         this.startNanos = System.nanoTime();
 
@@ -158,7 +160,10 @@ public class TelemetrySimulator {
     }
 
     private void stopInternal() {
-        running.set(false);
+        boolean wasRunning = running.getAndSet(false);
+        if (wasRunning) {
+            stoppedAt = Instant.now();
+        }
         ScheduledExecutorService current = executor;
         if (current != null) {
             current.shutdownNow();
@@ -188,13 +193,13 @@ public class TelemetrySimulator {
     public SimulatorStatus status() {
         Instant start = startedAt;
         boolean isRunning = running.get();
-        long elapsed = start == null ? 0 : java.time.Duration.between(start, Instant.now()).getSeconds();
+        Instant observedEnd = !isRunning && stoppedAt != null ? stoppedAt : Instant.now();
+        long elapsed = start == null ? 0 : java.time.Duration.between(start, observedEnd).getSeconds();
         long published = producer.getPublishedCount() - publishedBaseline;
         long failed = producer.getFailedCount() - failedBaseline;
-        Instant rateEnd = (!isRunning && endsAt != null) ? endsAt : Instant.now();
         long activeSeconds = start == null ? 0 : Math.max(1,
-                java.time.Duration.between(start, rateEnd).getSeconds());
-        double actualRate = attempted.get() / (double) activeSeconds;
+                java.time.Duration.between(start, observedEnd).getSeconds());
+        double actualRate = start == null ? 0.0 : attempted.get() / (double) activeSeconds;
         return new SimulatorStatus(
                 isRunning,
                 eventsPerSecond,

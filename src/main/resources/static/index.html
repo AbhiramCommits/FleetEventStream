@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FleetEventStream · Live Telemetry</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <h1>FleetEventStream</h1>
+          <p class="tagline">V2X telemetry · Kafka → SQL Server · live operations</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div id="healthBadge" class="badge badge-muted" aria-live="polite">
+          <span class="dot"></span><span id="healthText">connecting</span>
+        </div>
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <div id="connectionBanner" class="banner banner-error" hidden role="alert">
+      <strong>Connection problem.</strong> <span id="connectionMessage"></span>
+    </div>
+    <div id="toast" class="banner banner-info" hidden role="status"></div>
+
+    <section class="controls" aria-label="Simulator controls">
+      <div class="control-group">
+        <label for="rate">Events / sec</label>
+        <input id="rate" type="number" min="1" max="50000" step="10" value="200">
+      </div>
+      <div class="control-group">
+        <label for="duration">Duration (s, 0 = until stopped)</label>
+        <input id="duration" type="number" min="0" max="86400" step="10" value="0">
+      </div>
+      <button id="startBtn" class="btn btn-primary" type="button">Start simulator</button>
+      <button id="stopBtn" class="btn" type="button" disabled>Stop</button>
+      <span class="divider" aria-hidden="true"></span>
+      <button id="replayBtn" class="btn btn-ghost" type="button">Replay latest DLQ rows</button>
+      <span id="simStatus" class="sim-status">simulator idle</span>
+    </section>
+
+    <main class="grid">
+      <article class="card card-wide">
+        <div class="card-head">
+          <div>
+            <h2>Live throughput</h2>
+            <p class="muted">events ingested per second · last 60 s</p>
+          </div>
+          <div class="metric-inline">
+            <span id="throughputNow" class="big-number">0.0</span>
+            <span class="unit">ev/s</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="throughputChart" height="150" aria-label="Throughput sparkline"></canvas>
+        </div>
+        <div class="card-foot">
+          <span>window total <strong id="throughputTotal">0</strong></span>
+          <span>peak <strong id="throughputPeak">0</strong>/s</span>
+          <span>avg <strong id="throughputAvg">0.0</strong>/s</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div><h2>Consumer lag</h2><p class="muted"><span id="lagGroup">fleet-event-consumers</span></p></div>
+          <span id="groupState" class="badge badge-muted">—</span>
+        </div>
+        <div class="metric-row">
+          <span id="lagTotal" class="big-number">0</span>
+          <span class="unit">records behind</span>
+        </div>
+        <div class="meter"><span id="lagMeter"></span></div>
+        <div class="card-foot"><span>members <strong id="lagMembers">0</strong></span><span>lag threshold <strong id="lagThreshold">5,000</strong></span></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div><h2>Dead letters</h2><p class="muted">poison pills + exhausted retries</p></div></div>
+        <div class="metric-row"><span id="dlqTotal" class="big-number amber">0</span><span class="unit">total</span></div>
+        <div class="card-foot"><span>last hour <strong id="dlqLastHour">0</strong></span><span>stored (this run) <strong id="dlqStored">0</strong></span></div>
+        <div id="topReasons" class="reason-list"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div><h2>Ingestion</h2><p class="muted">consumer counters since start</p></div></div>
+        <dl class="kv">
+          <div><dt>Persisted (this run)</dt><dd id="rowsPersisted">0</dd></div>
+          <div><dt>Consumed</dt><dd id="rowsConsumed">0</dd></div>
+          <div><dt>Duplicates skipped</dt><dd id="duplicates" class="cyan">0</dd></div>
+          <div><dt>Failed deliveries</dt><dd id="failed">0</dd></div>
+        </dl>
+      </article>
+
+      <article class="card card-wide">
+        <div class="card-head"><div><h2>Per-partition lag</h2><p class="muted">committed offset vs broker end offset</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Partition</th><th>Committed</th><th>End</th><th>Lag</th><th class="bar-col">Behind</th></tr></thead>
+            <tbody id="lagTable"><tr><td colspan="5" class="empty">Waiting for broker data…</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card card-full">
+        <div class="card-head">
+          <div><h2>Recent dead letters</h2><p class="muted">newest first · source coordinates captured from Kafka headers</p></div>
+          <span id="dlqPageInfo" class="muted"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Source</th><th>Error class</th><th>Failure reason</th><th>Retries</th><th>Failed at</th></tr></thead>
+            <tbody id="dlqTable"><tr><td colspan="6" class="empty">No dead letters recorded.</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <span>polling every 2 s</span>
+      <span id="lastUpdated">never updated</span>
+      <span>FleetEventStream · at-least-once + idempotent writes</span>
+    </footer>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

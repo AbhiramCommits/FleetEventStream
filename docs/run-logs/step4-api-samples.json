@@ -1,0 +1,576 @@
+{
+  "capturedAt": "2026-10-18T08:07:51Z",
+  "baseUrl": "http://localhost:8080",
+  "note": "Real responses captured from the running compose stack (Kafka + SQL Server) while the simulator was producing telemetry. Credentials never appear in HTTP responses.",
+  "sampleIdentifiers": {
+    "eventId": "d394fdfc-22d9-44f1-b7c0-fe963bf508e9",
+    "vehicleId": "veh-0019"
+  },
+  "endpoints": {
+    "getEvent": {
+      "request": "GET /api/events/{eventId}",
+      "status": 200,
+      "response": {
+        "id": 55216,
+        "eventId": "d394fdfc-22d9-44f1-b7c0-fe963bf508e9",
+        "vehicleId": "veh-0019",
+        "eventTime": "2026-10-18T08:07:40.330545Z",
+        "latitude": 37.779592,
+        "longitude": -122.430085,
+        "speedKph": 9.29,
+        "headingDeg": 271.51,
+        "alertCode": null,
+        "payload": "{\"eventId\":\"d394fdfc-22d9-44f1-b7c0-fe963bf508e9\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:40.330545Z\",\"latitude\":37.779592,\"longitude\":-122.430085,\"speedKph\":9.29,\"headingDeg\":271.51,\"alertCode\":null}",
+        "ingestedAt": "2026-10-18T08:07:40.414457500Z"
+      }
+    },
+    "vehicleHistory": {
+      "request": "GET /api/vehicles/{vehicleId}/history?limit=5",
+      "status": 200,
+      "response": {
+        "vehicleId": "veh-0019",
+        "from": null,
+        "to": null,
+        "limit": 5,
+        "count": 5,
+        "events": [
+          {
+            "id": 55216,
+            "eventId": "d394fdfc-22d9-44f1-b7c0-fe963bf508e9",
+            "vehicleId": "veh-0019",
+            "eventTime": "2026-10-18T08:07:40.330545Z",
+            "latitude": 37.779592,
+            "longitude": -122.430085,
+            "speedKph": 9.29,
+            "headingDeg": 271.51,
+            "alertCode": null,
+            "payload": "{\"eventId\":\"d394fdfc-22d9-44f1-b7c0-fe963bf508e9\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:40.330545Z\",\"latitude\":37.779592,\"longitude\":-122.430085,\"speedKph\":9.29,\"headingDeg\":271.51,\"alertCode\":null}",
+            "ingestedAt": "2026-10-18T08:07:40.414457500Z"
+          },
+          {
+            "id": 55177,
+            "eventId": "435e3ff3-816b-4728-b8d0-49ab97530403",
+            "vehicleId": "veh-0019",
+            "eventTime": "2026-10-18T08:07:40.060784Z",
+            "latitude": 37.779591,
+            "longitude": -122.430085,
+            "speedKph": 9.98,
+            "headingDeg": 272.9,
+            "alertCode": null,
+            "payload": "{\"eventId\":\"435e3ff3-816b-4728-b8d0-49ab97530403\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:40.060784Z\",\"latitude\":37.779591,\"longitude\":-122.430085,\"speedKph\":9.98,\"headingDeg\":272.9,\"alertCode\":null}",
+            "ingestedAt": "2026-10-18T08:07:40.058137700Z"
+          },
+          {
+            "id": 55158,
+            "eventId": "09075d1e-269f-4cc5-b0bd-7f93c12a6762",
+            "vehicleId": "veh-0019",
+            "eventTime": "2026-10-18T08:07:39.930687Z",
+            "latitude": 37.779591,
+            "longitude": -122.430085,
+            "speedKph": 12.7,
+            "headingDeg": 269.75,
+            "alertCode": null,
+            "payload": "{\"eventId\":\"09075d1e-269f-4cc5-b0bd-7f93c12a6762\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:39.930687Z\",\"latitude\":37.779591,\"longitude\":-122.430085,\"speedKph\":12.7,\"headingDeg\":269.75,\"alertCode\":null}",
+            "ingestedAt": "2026-10-18T08:07:39.930121300Z"
+          },
+          {
+            "id": 55138,
+            "eventId": "30c00505-f258-4c19-8710-c5ff7bb05d42",
+            "vehicleId": "veh-0019",
+            "eventTime": "2026-10-18T08:07:39.793903Z",
+            "latitude": 37.779591,
+            "longitude": -122.430084,
+            "speedKph": 14.49,
+            "headingDeg": 266.39,
+            "alertCode": null,
+            "payload": "{\"eventId\":\"30c00505-f258-4c19-8710-c5ff7bb05d42\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:39.793903Z\",\"latitude\":37.779591,\"longitude\":-122.430084,\"speedKph\":14.49,\"headingDeg\":266.39,\"alertCode\":null}",
+            "ingestedAt": "2026-10-18T08:07:39.791812900Z"
+          },
+          {
+            "id": 55119,
+            "eventId": "b2a73f4b-615f-4748-b8c2-7b9452fbf316",
+            "vehicleId": "veh-0019",
+            "eventTime": "2026-10-18T08:07:39.661084Z",
+            "latitude": 37.779591,
+            "longitude": -122.430084,
+            "speedKph": 13.96,
+            "headingDeg": 265.61,
+            "alertCode": null,
+            "payload": "{\"eventId\":\"b2a73f4b-615f-4748-b8c2-7b9452fbf316\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:39.661084Z\",\"latitude\":37.779591,\"longitude\":-122.430084,\"speedKph\":13.96,\"headingDeg\":265.61,\"alertCode\":null}",
+            "ingestedAt": "2026-10-18T08:07:39.661176100Z"
+          }
+        ]
+      }
+    },
+    "vehicles": {
+      "request": "GET /api/vehicles?limit=5",
+      "status": 200,
+      "response": {
+        "count": 5,
+        "vehicles": [
+          {
+            "vehicleId": "veh-0020",
+            "eventCount": 2760,
+            "lastSeen": "2026-10-18T08:07:40.330635Z"
+          },
+          {
+            "vehicleId": "veh-0019",
+            "eventCount": 2747,
+            "lastSeen": "2026-10-18T08:07:40.330545Z"
+          },
+          {
+            "vehicleId": "veh-0018",
+            "eventCount": 2753,
+            "lastSeen": "2026-10-18T08:07:40.320579Z"
+          },
+          {
+            "vehicleId": "veh-0017",
+            "eventCount": 2747,
+            "lastSeen": "2026-10-18T08:07:40.310432Z"
+          },
+          {
+            "vehicleId": "veh-0016",
+            "eventCount": 2747,
+            "lastSeen": "2026-10-18T08:07:40.310348Z"
+          }
+        ]
+      }
+    },
+    "throughput": {
+      "request": "GET /api/stats/throughput?windowSeconds=60",
+      "status": 200,
+      "response": {
+        "windowSeconds": 60,
+        "from": "2026-10-18T08:06:51.278454Z",
+        "to": "2026-10-18T08:07:51.278454Z",
+        "totalEvents": 7577,
+        "eventsPerSecond": 126.28333333333333,
+        "peakEventsPerSecond": 383,
+        "points": [
+          {
+            "bucket": "2026-10-18T08:06:51Z",
+            "eventCount": 204
+          },
+          {
+            "bucket": "2026-10-18T08:06:52Z",
+            "eventCount": 383
+          },
+          {
+            "bucket": "2026-10-18T08:06:53Z",
+            "eventCount": 194
+          },
+          {
+            "bucket": "2026-10-18T08:06:54Z",
+            "eventCount": 154
+          },
+          {
+            "bucket": "2026-10-18T08:06:55Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:06:56Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:06:57Z",
+            "eventCount": 90
+          },
+          {
+            "bucket": "2026-10-18T08:06:58Z",
+            "eventCount": 60
+          },
+          {
+            "bucket": "2026-10-18T08:06:59Z",
+            "eventCount": 91
+          },
+          {
+            "bucket": "2026-10-18T08:07:00Z",
+            "eventCount": 266
+          },
+          {
+            "bucket": "2026-10-18T08:07:01Z",
+            "eventCount": 173
+          },
+          {
+            "bucket": "2026-10-18T08:07:02Z",
+            "eventCount": 194
+          },
+          {
+            "bucket": "2026-10-18T08:07:03Z",
+            "eventCount": 144
+          },
+          {
+            "bucket": "2026-10-18T08:07:04Z",
+            "eventCount": 148
+          },
+          {
+            "bucket": "2026-10-18T08:07:05Z",
+            "eventCount": 144
+          },
+          {
+            "bucket": "2026-10-18T08:07:06Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:07Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:08Z",
+            "eventCount": 148
+          },
+          {
+            "bucket": "2026-10-18T08:07:09Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:10Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:11Z",
+            "eventCount": 144
+          },
+          {
+            "bucket": "2026-10-18T08:07:12Z",
+            "eventCount": 149
+          },
+          {
+            "bucket": "2026-10-18T08:07:13Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:14Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:15Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:16Z",
+            "eventCount": 150
+          },
+          {
+            "bucket": "2026-10-18T08:07:17Z",
+            "eventCount": 150
+          },
+          {
+            "bucket": "2026-10-18T08:07:18Z",
+            "eventCount": 144
+          },
+          {
+            "bucket": "2026-10-18T08:07:19Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:20Z",
+            "eventCount": 143
+          },
+          {
+            "bucket": "2026-10-18T08:07:21Z",
+            "eventCount": 148
+          },
+          {
+            "bucket": "2026-10-18T08:07:22Z",
+            "eventCount": 148
+          },
+          {
+            "bucket": "2026-10-18T08:07:23Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:24Z",
+            "eventCount": 148
+          },
+          {
+            "bucket": "2026-10-18T08:07:25Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:26Z",
+            "eventCount": 149
+          },
+          {
+            "bucket": "2026-10-18T08:07:27Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:28Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:29Z",
+            "eventCount": 146
+          },
+          {
+            "bucket": "2026-10-18T08:07:30Z",
+            "eventCount": 145
+          },
+          {
+            "bucket": "2026-10-18T08:07:31Z",
+            "eventCount": 149
+          },
+          {
+            "bucket": "2026-10-18T08:07:32Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:33Z",
+            "eventCount": 143
+          },
+          {
+            "bucket": "2026-10-18T08:07:34Z",
+            "eventCount": 145
+          },
+          {
+            "bucket": "2026-10-18T08:07:35Z",
+            "eventCount": 52
+          },
+          {
+            "bucket": "2026-10-18T08:07:36Z",
+            "eventCount": 195
+          },
+          {
+            "bucket": "2026-10-18T08:07:37Z",
+            "eventCount": 176
+          },
+          {
+            "bucket": "2026-10-18T08:07:38Z",
+            "eventCount": 164
+          },
+          {
+            "bucket": "2026-10-18T08:07:39Z",
+            "eventCount": 147
+          },
+          {
+            "bucket": "2026-10-18T08:07:40Z",
+            "eventCount": 49
+          }
+        ]
+      }
+    },
+    "lag": {
+      "request": "GET /api/stats/lag",
+      "status": 200,
+      "response": {
+        "groupId": "fleet-event-consumers",
+        "topic": "vehicle.telemetry",
+        "totalLag": 0,
+        "groupState": "Stable",
+        "members": 3,
+        "partitions": [
+          {
+            "partition": 0,
+            "committedOffset": 19853,
+            "endOffset": 19853,
+            "lag": 0
+          },
+          {
+            "partition": 1,
+            "committedOffset": 16844,
+            "endOffset": 16844,
+            "lag": 0
+          },
+          {
+            "partition": 2,
+            "committedOffset": 19649,
+            "endOffset": 19649,
+            "lag": 0
+          }
+        ]
+      }
+    },
+    "dlqStats": {
+      "request": "GET /api/stats/dlq",
+      "status": 200,
+      "response": {
+        "total": 1136,
+        "lastHour": 1136,
+        "lastHourSince": "2026-10-18T07:07:51.380068Z",
+        "topFailureReasons": [
+          {
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "count": 1136
+          }
+        ]
+      }
+    },
+    "pipeline": {
+      "request": "GET /api/stats/pipeline",
+      "status": 200,
+      "response": {
+        "consumed": 9000,
+        "persisted": 8807,
+        "duplicatesSkipped": 0,
+        "failed": 193,
+        "dlqStored": 193,
+        "vehicleRows": 55020,
+        "deadLetterRows": 1136
+      }
+    },
+    "health": {
+      "request": "GET /api/health/pipeline",
+      "status": 200,
+      "response": {
+        "healthy": true,
+        "status": "UP",
+        "kafkaReachable": true,
+        "databaseReachable": true,
+        "totalLag": 0,
+        "lagThreshold": 5000,
+        "lagUnderThreshold": true,
+        "consumerGroupState": "Stable",
+        "checkedAt": "2026-10-18T08:07:51.506493Z",
+        "details": {}
+      }
+    },
+    "simulator": {
+      "request": "GET /api/simulator/status",
+      "status": 200,
+      "response": {
+        "running": false,
+        "targetEventsPerSecond": 150,
+        "vehicleCount": 20,
+        "malformedRate": 0.02,
+        "durationSeconds": 60,
+        "eventsAttempted": 9000,
+        "eventsPublished": 9000,
+        "eventsFailed": 0,
+        "malformedPublished": 193,
+        "actualEventsPerSecond": 150.0,
+        "startedAt": "2026-10-18T08:06:40.327755Z",
+        "endsAt": "2026-10-18T08:07:40.327755Z",
+        "elapsedSeconds": 60
+      }
+    },
+    "adminDlq": {
+      "request": "GET /api/admin/dlq?page=0&size=5",
+      "status": 200,
+      "response": {
+        "items": [
+          {
+            "id": 1136,
+            "sourceTopic": "vehicle.telemetry",
+            "partitionId": 0,
+            "sourceOffset": 1135,
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException",
+            "rawPayload": "{\"eventId\":\"3ad652bf-0909-47ac-b729-06d44c394aa2\",\"vehicleId\":\"veh-0019\",\"eventTime\":\"2026-10-18T08:07:40.194077Z\",\"latitude\":",
+            "failedAt": "2026-10-18T08:07:40.316004700Z",
+            "retryCount": 0
+          },
+          {
+            "id": 1135,
+            "sourceTopic": "vehicle.telemetry",
+            "partitionId": 0,
+            "sourceOffset": 1134,
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException",
+            "rawPayload": "{\"eventId\":\"9ec0c573-e131-42d1-9b74-9823091a6144\",\"vehicleId\":\"veh-0008\",\"eventTime\":\"2026-10-18T08:07:40.121535Z\",\"latitude\":",
+            "failedAt": "2026-10-18T08:07:40.216995500Z",
+            "retryCount": 0
+          },
+          {
+            "id": 1134,
+            "sourceTopic": "vehicle.telemetry",
+            "partitionId": 0,
+            "sourceOffset": 1133,
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException",
+            "rawPayload": "{\"eventId\":\"6f841ac8-183f-4d75-aa1e-dd79f4baa0b3\",\"vehicleId\":\"veh-0008\",\"eventTime\":\"2026-10-18T08:07:39.990528Z\",\"latitude\":",
+            "failedAt": "2026-10-18T08:07:40.028532600Z",
+            "retryCount": 0
+          },
+          {
+            "id": 1133,
+            "sourceTopic": "vehicle.telemetry",
+            "partitionId": 0,
+            "sourceOffset": 1132,
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException",
+            "rawPayload": "{\"eventId\":\"36ab062a-c9b6-435d-a70e-dd556a674a0c\",\"vehicleId\":\"veh-0002\",\"eventTime\":\"2026-10-18T08:07:39.680624Z\",\"latitude\":",
+            "failedAt": "2026-10-18T08:07:39.695580Z",
+            "retryCount": 0
+          },
+          {
+            "id": 1132,
+            "sourceTopic": "vehicle.telemetry",
+            "partitionId": 0,
+            "sourceOffset": 1131,
+            "failureReason": "Unexpected end-of-input within/between Object entries\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 127]",
+            "errorClass": "com.fasterxml.jackson.core.io.JsonEOFException",
+            "rawPayload": "{\"eventId\":\"c8114482-04ea-49e7-8ff9-894e6ae94dc4\",\"vehicleId\":\"veh-0003\",\"eventTime\":\"2026-10-18T08:07:39.553261Z\",\"latitude\":",
+            "failedAt": "2026-10-18T08:07:39.586024800Z",
+            "retryCount": 0
+          }
+        ],
+        "page": 0,
+        "size": 5,
+        "total": 1136
+      }
+    }
+  },
+  "errorResponses": {
+    "unknownEvent": {
+      "request": "GET /api/events/does-not-exist",
+      "status": 404,
+      "response": {
+        "timestamp": "2026-10-18T08:07:51.620130Z",
+        "status": 404,
+        "error": "Not Found",
+        "message": "No event found with eventId=does-not-exist",
+        "path": "/api/events/does-not-exist",
+        "details": null
+      }
+    },
+    "badLimit": {
+      "request": "GET /api/vehicles?limit=1001",
+      "status": 400,
+      "response": {
+        "timestamp": "2026-10-18T08:07:51.710023Z",
+        "status": 400,
+        "error": "Bad Request",
+        "message": "vehicles.limit must be less than or equal to 1000",
+        "path": "/api/vehicles",
+        "details": null
+      }
+    },
+    "reversedDateRange": {
+      "request": "GET /api/vehicles/{vehicleId}/history?from=...&to=...",
+      "status": 400,
+      "response": {
+        "timestamp": "2026-10-18T08:07:51.754851Z",
+        "status": 400,
+        "error": "Bad Request",
+        "message": "from must be earlier than or equal to to",
+        "path": "/api/vehicles/veh-0019/history",
+        "details": null
+      }
+    },
+    "badWindow": {
+      "request": "GET /api/stats/throughput?windowSeconds=0",
+      "status": 400,
+      "response": {
+        "timestamp": "2026-10-18T08:07:51.788619Z",
+        "status": 400,
+        "error": "Bad Request",
+        "message": "throughput.windowSeconds must be greater than or equal to 1",
+        "path": "/api/stats/throughput",
+        "details": null
+      }
+    },
+    "wrongMethod": {
+      "request": "GET /api/simulator/start",
+      "status": 405,
+      "response": {
+        "timestamp": "2026-10-18T08:07:51.838520Z",
+        "status": 405,
+        "error": "Method Not Allowed",
+        "message": "HTTP method GET is not supported for this endpoint",
+        "path": "/api/simulator/start",
+        "details": null
+      }
+    }
+  }
+}
